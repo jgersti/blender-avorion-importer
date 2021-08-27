@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
 from dataclasses import dataclass, field
-from numpy import ndarray, float64, int64
 
 try:
     from xml.etree.cElementTree import Element
@@ -12,25 +12,24 @@ except:
 @dataclass(frozen=True)
 class Block:
     index:          int
-    lower:          ndarray
-    upper:          ndarray
-    orientation:    ndarray
+    lower:          np.ndarray
+    upper:          np.ndarray
+    orientation:    np.ndarray
     type:           int
     material:       int
     color:          str
     parent:         int = -1
 
     @classmethod
-    def from_xml(cls, item_xml: Element, offset: ndarray = None) -> Block:
+    def from_xml(cls, item_xml: Element, offset: np.ndarray = None) -> Block:
         if item_xml.tag == "item":
             block_xml = item_xml.find("block")
             if block_xml != None:
                 attr = block_xml.attrib
 
-                lower = ndarray([attr["lx"], attr["ly"], attr["lz"]], dtype=float64)
-                upper = ndarray([attr["ux"], attr["uy"], attr["uz"]], dtype=float64)
-                orientation = ndarray(
-                    [attr["look"], attr["up"]], dtype=int64)
+                lower = np.array([attr["lx"], attr["ly"], attr["lz"]], dtype=np.float64)
+                upper = np.array([attr["ux"], attr["uy"], attr["uz"]], dtype=np.float64)
+                orientation = np.array([attr["look"], attr["up"]], dtype=np.int64)
 
                 if offset is not None:
                     lower += offset
@@ -57,7 +56,7 @@ class Turret:
     coaxial:    bool
     parent:     int = -1
     color:      int = -1
-    muzzles:    list[ndarray] = field(init=False, default_factory=list, repr=False)
+    muzzles:    list[np.ndarray] = field(init=False, default_factory=list, repr=False)
     base:       list[Block] = field(default_factory=list, repr=False)
     body:       list[Block] = field(default_factory=list, repr=False)
     barrel:     list[Block] = field(default_factory=list, repr=False)
@@ -73,21 +72,24 @@ class Turret:
             raise NotImplementedError("Coaxial turrets are not yet implemented.")
         else:
             base_xml = turret_xml.find("base")
-            base_offset = ndarray([base_xml.get("px"),
-                                   base_xml.get("py"),
-                                   base_xml.get("pz")], dtype=float64)
+            base_offset = np.array([base_xml.get("px"),
+                                    base_xml.get("py"),
+                                    base_xml.get("pz")],
+                                   dtype=np.float64)
             base = [Block.from_xml(b, base_offset) for b in base_xml.iterfind("*/item")]
 
             body_xml = turret_xml.find("body")
-            body_offset = ndarray([body_xml.get("px"),
-                                   body_xml.get("py"),
-                                   body_xml.get("pz")], dtype=float64)
+            body_offset = np.array([body_xml.get("px"),
+                                    body_xml.get("py"),
+                                    body_xml.get("pz")],
+                                   dtype=np.float64)
             body = [Block.from_xml(b, body_offset) for b in body_xml.iterfind("*/item")]
 
             barrel_xml = turret_xml.find("barrel")
-            barrel_offset = ndarray([barrel_xml.get("px"),
-                                     barrel_xml.get("py"),
-                                     barrel_xml.get("pz")], dtype=float64)
+            barrel_offset = np.array([barrel_xml.get("px"),
+                                      barrel_xml.get("py"),
+                                      barrel_xml.get("pz")],
+                                     dtype=np.float64)
             barrel = [Block.from_xml(b, barrel_offset) for b in barrel_xml.iterfind("*/item")]
 
             return Turret(
