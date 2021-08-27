@@ -62,7 +62,7 @@ class ImportAvorionXML(Operator):
         keywords = self.as_keywords(ignore=("axis_forward", "axis_up", "filter_glob"))
 
         global_matrix = axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up)
-        keywords["global_matrix"] = global_matrix
+        keywords["global_matrix"] = global_matrix.to_4x4()
 
 
 
