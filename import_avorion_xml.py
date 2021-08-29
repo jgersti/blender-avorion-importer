@@ -11,12 +11,29 @@ except:
 from pathlib import Path
 
 from mathutils import Matrix, Vector
-from bpy_extras.io_utils import axis_conversion
 from bpy_extras.wm_utils.progress_report import ProgressReport
 
 from .avorion_utils.parser import Ship, Turret, Block
-from .avorion_utils.shapes import generate_geometry
+from .avorion_utils.geometry import generate_geometry
 from .avorion_utils.categories import get_shape, get_category, get_material
+
+
+def create_mesh(objects, vertices, faces, offsets, dataname):
+    mesh = bpy.data.meshes.new(dataname)
+
+    mesh.vertices.add(len(vertices))
+    mesh.loops.add(np.sum(offsets))
+    mesh.polygons.add(len(offsets))
+
+    mesh.vertices.foreach_set("co", np.asarray(vertices).reshape(-1))
+    mesh.polygons.foreach_set("loop_total", offsets)
+    mesh.polygons.foreach_set("loop_start", np.cumsum(offsets)-offsets)
+    mesh.polygons.foreach_set("vertices", faces)
+
+    mesh.update(calc_edges=True)
+
+    object = bpy.data.objects.new(mesh.name, mesh)
+    objects.append(object)
 
 def load(context,
         filepath: str,
@@ -25,11 +42,10 @@ def load(context,
         seperate_blocks: bool = True,
         global_matrix: Matrix = None
     ):
-
-    wm = context.window_manager
-
     filename = Path(filepath).stem
-    print(filename)
+    wm = context.window_manager
+    vl = context.view_layer
+    ac = vl.active_layer_collection.collection
 
     with ProgressReport(wm) as progress:
         progress.enter_substeps(1, f"Importing Avorion XML {filepath}...")
@@ -53,49 +69,59 @@ def load(context,
 
         progress.enter_substeps(5, f"Building Geomtry...")
 
+        # num_vertices = 0
+        # num_faces = 0
+        # num_blocks = 0
+
         collections = []
         objects = []
-
-        num_vertices = None
-        num_faces = None
-        num_blocks = None
 
         if design is Turret:
             raise NotImplementedError("Import of Turrets is not yet implemented.")
         else:
             ###
-            # - Assume seperate_blocks = True for now
             # - Ignore Turrets
 
+            num_vertices = 0
+            num_faces = 0
+            num_blocks = 0
+
+            vertices = []
+            faces = []
+            offsets = []
+
             for block in design.blocks:
-                mesh = bpy.data.meshes.new(f"{filename}.{get_shape(block.type)}.{block.index}")
+                _vertices, _faces, _offsets = generate_geometry(block)
 
-                vertices, faces, offsets = generate_geometry(block)
+                if seperate_blocks:
+                    create_mesh(objects, _vertices, _faces, _offsets, f"{filename}.{block.index}")
+                else:
+                    vertices.extend(_vertices)
+                    faces.extend(_faces + num_vertices)
+                    offsets.extend(_offsets)
 
-                mesh.vertices.add(len(vertices))
-                mesh.loops.add(np.sum(offsets))
-                mesh.polygons.add(len(offsets))
+                num_vertices += len(_vertices)
+                num_faces += len(_offsets)
+                num_blocks += 1
 
-                mesh.vertices.foreach_set("co", vertices.reshape(-1))
-                mesh.polygons.foreach_set("loop_total", offsets)
-                mesh.polygons.foreach_set("loop_start", np.cumsum(offsets)-offsets)
-                mesh.polygons.foreach_set("vertices", faces)
+            if seperate_blocks:
+                collection = bpy.data.collections.new(filename)
+                collections.append(collection)
+            else:
+                create_mesh(objects, vertices, faces, offsets, filename)
+                collection = ac
 
-                mesh.update(calc_edges=True)
+            #???
 
-                object = bpy.data.objects.new(mesh.name, mesh)
-                object.matrix_world = global_matrix
-                objects.append(object)
-
-            view_layer = context.view_layer
-            collection = view_layer.active_layer_collection.collection
+            for c in collections:
+                ac.children.link(c)
 
             for o in objects:
+                o.matrix_world = global_matrix
                 collection.objects.link(o)
                 o.select_set(True)
 
-            view_layer.update()
-
+        vl.update()
 
         progress.leave_substeps("Done.")
         progress.leave_substeps(f"Finished importing: {filepath}")

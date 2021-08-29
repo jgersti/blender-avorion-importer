@@ -123,7 +123,7 @@ class XML_PT_import_geometry(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        layout.use_property_decorate = False  # No animation.
+        layout.use_property_decorate = False
 
         sfile = context.space_data
         operator = sfile.active_operator
