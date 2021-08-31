@@ -9,12 +9,14 @@ bl_info = {
     "category" : "Import-Export"
 }
 
+
 if "bpy" in locals():
     import importlib
     if "import_avorion_xml" in locals():
         importlib.reload(import_avorion_xml)
     if "avorion_utils" in locals():
         importlib.reload(avorion_utils)
+
 
 import bpy
 from bpy.props import BoolProperty, FloatProperty, StringProperty, EnumProperty
@@ -36,21 +38,16 @@ class ImportAvorionXML(Operator):
 
     filepath: StringProperty(
         name="File Path",
-        description="Filepath used for importing the file",
+        description="Filepath used for importing the file."
+                    "(WARNING! disables turret rigging.)",
         maxlen=1024,
         subtype='FILE_PATH'
-    )
-
-    recenter_to_origin: BoolProperty(
-        name="Recenter to Origin",
-        description="Recenter model median to origin",
-        default=False
     )
 
     seperate_blocks: BoolProperty(
         name="Seperate Blocks",
         description="Seperate Blocks into indiviual Meshes",
-        default=True
+        default=False
     )
 
     def draw(self, context):
@@ -63,8 +60,6 @@ class ImportAvorionXML(Operator):
 
         global_matrix = axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up)
         keywords["global_matrix"] = global_matrix.to_4x4()
-
-
 
         return import_avorion_xml.load(context, **keywords)
 
@@ -82,7 +77,7 @@ class ImportAvorionXML(Operator):
         return {'RUNNING_MODAL'}
 
 
-class XML_PT_import_transform(Panel):
+class AVORION_PT_import_transform(Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOL_PROPS'
     bl_label = "Transform"
@@ -107,7 +102,7 @@ class XML_PT_import_transform(Panel):
         layout.prop(operator, "axis_up")
 
 
-class XML_PT_import_geometry(Panel):
+class AVORION_PT_import_geometry(Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOL_PROPS'
     bl_label = "Geometry"
@@ -128,17 +123,17 @@ class XML_PT_import_geometry(Panel):
         sfile = context.space_data
         operator = sfile.active_operator
 
-        layout.prop(operator, "recenter_to_origin")
         layout.prop(operator, "seperate_blocks")
 
 
 def menu_func_import(self, context):
     self.layout.operator(ImportAvorionXML.bl_idname, text="Avorion (.xml)")
 
+
 classes = (
     ImportAvorionXML,
-    XML_PT_import_transform,
-    XML_PT_import_geometry
+    AVORION_PT_import_transform,
+    AVORION_PT_import_geometry
 )
 
 def register():

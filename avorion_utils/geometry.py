@@ -1,11 +1,9 @@
-from typing import Tuple
+from __future__ import annotations
 
 import numpy as np
-from bpy_extras.io_utils import _axis_convert_lut, _axis_convert_matrix
 
 from . categories import get_shape
 from . parser import Block
-
 
 
 def _rotate_translate(points: np.ndarray,
@@ -33,8 +31,7 @@ def _rotate_translate(points: np.ndarray,
 
     return points
 
-
-def _create_hexahedron() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_hexahedron() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [0, 0, 1],
                          [1, 0, 1],
@@ -53,8 +50,7 @@ def _create_hexahedron() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([4, 4, 4, 4, 4, 4], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_wedge() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_wedge() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [1, 0, 0],
                          [1, 0, 1],
@@ -69,7 +65,7 @@ def _create_wedge() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([4, 4, 4, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-def _create_pyramid_1() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_pyramid_1() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [0, 0, 1],
                          [1, 0, 1],
@@ -84,8 +80,7 @@ def _create_pyramid_1() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([4, 3, 3, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_pyramid_2() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_pyramid_2() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [0, 1, 0],
                          [1, 1, 1],
@@ -100,8 +95,7 @@ def _create_pyramid_2() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([4, 3, 3, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_tetrahedron_1() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_tetrahedron_1() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [1, 0, 0],
                          [1, 0, 1],
@@ -114,8 +108,7 @@ def _create_tetrahedron_1() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([3, 3, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_tetrahedron_2() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_tetrahedron_2() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [0, 0, 1],
                          [1, 0, 1],
@@ -128,8 +121,7 @@ def _create_tetrahedron_2() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([3, 3, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_tetrahedron_3() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_tetrahedron_3() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[1, 0, 0],
                          [0, 0, 1],
                          [1, 0, 1],
@@ -142,8 +134,7 @@ def _create_tetrahedron_3() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     offsets = np.asarray([3, 3, 3, 3], dtype=np.int64)
     return points, faces, offsets
 
-
-def _create_polyhedron() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _create_polyhedron() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     points = np.asarray([[0, 0, 0],
                          [0, 0, 1],
                          [1, 0, 1],
@@ -163,7 +154,7 @@ def _create_polyhedron() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return points, faces, offsets
 
 
-def generate_geometry(block: Block) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def generate_geometry(block: Block) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     shape2geometry = {
         'Cube':             _create_hexahedron,
         'Edge':             _create_wedge,
@@ -179,5 +170,5 @@ def generate_geometry(block: Block) -> Tuple[np.ndarray, np.ndarray, np.ndarray]
     points = _rotate_translate(points, block.orientation, block.lower, block.upper)
     return points, faces, offsets
 
-def get_bounds(block: Block):
+def get_bounds(block: Block) -> tuple[np.ndarray, np.ndarray]:
     return block.lower, block.upper

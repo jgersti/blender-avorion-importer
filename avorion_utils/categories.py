@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class Material:
     index: int
     name: str
     color: str
+
 
 MATERIALS = (
     Material(0, "Iron", "#ffb380"),
@@ -15,6 +17,7 @@ MATERIALS = (
     Material(5, "Ogonite", "#ff8133"),
     Material(6, "Avorion", "#ff2626"),
 )
+
 
 SHAPES = {
     "Cube":             (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
@@ -29,6 +32,7 @@ SHAPES = {
     "Twisted Corner 2": (109, 111, 119, 129, 156,176, 196, 198, 200, 516, 526, 706),
     "Flat Corner":      (112, 113, 120, 127, 157, 177, 201, 202, 203, 517, 527, 707),
 }
+
 
 CATEGORIES = {
     "Smart Hull":       (1, 2, 100, 101, 102, 103, 108, 109, 112),
@@ -54,12 +58,12 @@ CATEGORIES = {
     "The Rest":         (5, 9, 10, 11, 16, 17, 19, 56, 57, 58, 60, 61, 600, 601, 650, 651),
 }
 
+
 def get_shape(index: int) -> str:
     try:
         return next((key for key, indices in SHAPES.items() if index in indices))
     except:
         raise ValueError(f"invalid type index '{index}'.")
-
 
 def get_category(index: int) -> str:
     try:
