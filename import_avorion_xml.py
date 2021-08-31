@@ -240,7 +240,7 @@ def load(context,
             if seperate_blocks:
                 create_mesh(objects, _vertices, _faces, _offsets, dataname=f"{name}_block{block.index}")
             else:
-                _faces + num_vertices
+                _faces += num_vertices
 
                 vertices.extend(_vertices)
                 faces.extend(_faces)
