@@ -125,10 +125,10 @@ class Ship:
 
     @classmethod
     def from_xml(cls, ship_xml: Element, name: str = "") -> Ship:
-        if ship_xml.tag != "ship_design":
-            raise ValueError("No <ship_design> found.")
+        if ship_xml.tag != "ship_design" and ship_xml.tag != "plan":
+            raise ValueError("No <ship_design> or <plan> found.")
 
-        blocks = [Block.from_xml(item) for item in ship_xml.iterfind('plan/item')]
-        turrets = [Turret.from_xml(turret) for turret in ship_xml.iterfind('turretDesign')]
+        blocks = [Block.from_xml(item) for item in ship_xml.iterfind("plan/item" if ship_xml.tag != "plan" else "item")]
+        turrets = [Turret.from_xml(turret) for turret in ship_xml.iterfind("turretDesign")]
 
         return Ship(blocks=blocks, turrets=turrets)
