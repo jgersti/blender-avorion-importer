@@ -70,44 +70,35 @@ class Turret:
         muzzles = [np.array([m.get("x"), m.get("y"), m.get("z")], dtype=np.float64)
                    for m in turret_xml.iterfind("muzzlePosition")]
 
-        if coaxial:
-            raise NotImplementedError("Coaxial turrets are not yet implemented.")
-        else:
-            base_xml = turret_xml.find("base")
-            base_origin = np.array([base_xml.get("px"),
-                                    base_xml.get("py"),
-                                    base_xml.get("pz")],
-                                   dtype=np.float64)
-            base = [Block.from_xml(b) for b in base_xml.iterfind("*/item")]
+        base_xml = turret_xml.find("base")
+        base_origin = np.array([base_xml.get("px"), base_xml.get("py"), base_xml.get("pz")],
+                                dtype=np.float64)
+        base = [Block.from_xml(b) for b in base_xml.iterfind("*/item")]
 
-            body_xml = turret_xml.find("body")
-            body_origin = np.array([body_xml.get("px"),
-                                    body_xml.get("py"),
-                                    body_xml.get("pz")],
-                                   dtype=np.float64)
-            body = [Block.from_xml(b) for b in body_xml.iterfind("*/item")]
+        body_xml = turret_xml.find("body")
+        body_origin = np.array([body_xml.get("px"), body_xml.get("py"), body_xml.get("pz")],
+                                dtype=np.float64)
+        body = [Block.from_xml(b) for b in body_xml.iterfind("*/item")]
 
-            barrel_xml = turret_xml.find("barrel")
-            barrel_origin = np.array([barrel_xml.get("px"),
-                                      barrel_xml.get("py"),
-                                      barrel_xml.get("pz")],
-                                     dtype=np.float64)
-            barrel = [Block.from_xml(b) for b in barrel_xml.iterfind("*/item")]
+        barrel_xml = turret_xml.find("barrel")
+        barrel_origin = np.array([barrel_xml.get("px"), barrel_xml.get("py"), barrel_xml.get("pz")],
+                                    dtype=np.float64)
+        barrel = [Block.from_xml(b) for b in barrel_xml.iterfind("*/item")]
 
-            return Turret(
-                size            = float(turret_xml.get("size")),
-                coaxial         = coaxial,
-                color           = int(turret_xml.get("shot_color")),
-                parent          = int(turret_xml.get("blockIndex", -1)),
-                muzzles         = muzzles,
-                base_origin     = base_origin,
-                base            = base,
-                body_origin     = body_origin,
-                body            = body,
-                barrel_origin   = barrel_origin,
-                barrel          = barrel)
+        return Turret(
+            size            = float(turret_xml.get("size")),
+            coaxial         = coaxial,
+            color           = int(turret_xml.get("shot_color")),
+            parent          = int(turret_xml.get("blockIndex", -1)),
+            muzzles         = muzzles,
+            base_origin     = base_origin,
+            base            = base,
+            body_origin     = body_origin,
+            body            = body,
+            barrel_origin   = barrel_origin,
+            barrel          = barrel)
 
-    def get_part(self, part: str) -> tuple[list[Block], np.np.adarray]:
+    def get_part(self, part: str) -> tuple[list[Block], np.ndarray]:
         if part.casefold() == "base":
             return self.base, self.base_origin
         elif part.casefold() == "body":
