@@ -51,12 +51,12 @@ def create_mesh(objects,
 
     mesh.update(calc_edges=True)
 
-    object = bpy.data.objects.new(mesh.name, mesh)
+    obj = bpy.data.objects.new(mesh.name, mesh)
 
     if origin is not None:
-        object.matrix_world = Matrix.Translation(origin)
+        obj.matrix_world = Matrix.Translation(origin)
 
-    objects.append(object)
+    objects.append(obj)
 
 def create_turret_armature(context, collection, design, dataname="turret"):
     _armature = bpy.data.armatures.new(f"{dataname}_armature")
