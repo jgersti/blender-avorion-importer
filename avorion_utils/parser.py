@@ -1,125 +1,139 @@
-from __future__ import annotations
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import Self, Literal
 
 import numpy as np
-from dataclasses import dataclass, field
+import numpy.typing as npt
 
 try:
     from xml.etree.cElementTree import Element
-except:
+except ImportError:
     from xml.etree.ElementTree import Element
 
 
-@dataclass(frozen=True)
+__all__ = ["Block", "Ship", "Turret"]
+
+
+def _parse_coordinate(elem: Element) -> npt.NDArray[np.float64]:
+    return np.array([elem.get("px"), elem.get("py"), elem.get("pz")], dtype=np.float64)
+
+@dataclass(frozen=True, slots=True)
 class Block:
-    index:          int
-    lower:          np.ndarray
-    upper:          np.ndarray
-    orientation:    np.ndarray
-    type:           int
-    material:       int
-    color:          str
-    parent:         int = -1
+    index: int
+    lower: npt.NDArray[np.float64]
+    upper: npt.NDArray[np.float64]
+    orientation: npt.NDArray[np.int64]
+    type: int
+    material: int
+    color: str
+    secondary_color: str
+    parent: int = -1
 
     @classmethod
-    def from_xml(cls, item_xml: Element) -> Block:
-        if item_xml.tag == "item":
-            block_xml = item_xml.find("block")
-            if block_xml != None:
-                attr = block_xml.attrib
-
-                lower = np.array([attr["lx"], attr["ly"], attr["lz"]], dtype=np.float64)
-                upper = np.array([attr["ux"], attr["uy"], attr["uz"]], dtype=np.float64)
-                orientation = np.array([attr["look"], attr["up"]], dtype=np.int64)
-
-                return Block(
-                    index       = int(item_xml.get("index")),
-                    parent      = int(item_xml.get("parent")),
-                    lower       = lower,
-                    upper       = upper,
-                    orientation = orientation,
-                    type        = int(attr["index"]),
-                    material    = int(attr["material"]),
-                    color       = attr["color"])
-            else:
-                raise ValueError("<item> does not contain <block> tag.")
-        else:
+    def from_xml(cls, item_xml: Element) -> Self:
+        if item_xml.tag != "item":
             raise ValueError("Invalid <item> tag.")
 
+        if (block_xml := item_xml.find("block")) is not None:
+            attr = block_xml.attrib
 
-@dataclass(frozen=True)
-class Turret:
-    size:           float
-    coaxial:        bool = False
-    parent:         int = -1
-    color:          int = -1
-    base_origin:    np.ndarray = field(default_factory=lambda: np.zeros(3), repr=False)
-    base:           list[Block] = field(default_factory=list, repr=False)
-    body_origin:    np.ndarray = field(default_factory=lambda: np.zeros(3), repr=False)
-    body:           list[Block] = field(default_factory=list, repr=False)
-    barrel_origin:  np.ndarray = field(default_factory=lambda: np.zeros(3), repr=False)
-    barrel:         list[Block] = field(default_factory=list, repr=False)
-    muzzles:        list[np.ndarray] = field(default_factory=list, repr=False)
+            lower = np.array([attr["lx"], attr["ly"], attr["lz"]], dtype=np.float64)
+            upper = np.array([attr["ux"], attr["uy"], attr["uz"]], dtype=np.float64)
+            orientation = np.array([attr["look"], attr["up"]], dtype=np.int64)
+
+            return cls(
+                index=int(item_xml.get("index", "")),
+                parent=int(item_xml.get("parent", "")),
+                lower=lower,
+                upper=upper,
+                orientation=orientation,
+                type=int(attr["index"]),
+                material=int(attr["material"]),
+                color=attr["color"],
+                secondary_color=attr.get("secondaryColor", "00000000"),
+            )
+        else:
+            raise ValueError("<item> does not contain <block> tag.")
+
+    @property
+    def bounds(self) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        return self.lower, self.upper
+
+
+@dataclass(frozen=True, slots=True)
+class TurretPart:
+    part: Literal["barrel", "base", "body"] = "base"
+    origin: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros(3), repr=False)
+    blocks: Sequence[Block] = field(default_factory=list, repr=False)
 
     @classmethod
-    def from_xml(cls, turret_xml: Element) -> Turret:
+    def from_xml(cls, part_xml: Element) -> Self:
+        assert part_xml.tag in ("barrel", "base", "body")
+
+        return cls(
+            part=part_xml.tag,
+            origin=_parse_coordinate(part_xml),
+            blocks=[Block.from_xml(b) for b in part_xml.iterfind("*/item")],
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Turret:
+    name: str
+    size: float
+    coaxial: bool = False
+    parent: int = -1
+    color: int = -1
+    base: TurretPart = field(default_factory=TurretPart)
+    body: TurretPart = field(default_factory=TurretPart)
+    barrel: TurretPart = field(default_factory=TurretPart)
+    muzzles: Sequence[npt.NDArray[np.float64]] = field(default_factory=list, repr=False)
+
+    @classmethod
+    def from_xml(cls, turret_xml: Element, name: str = "") -> Self:
         if turret_xml.tag != "turret_design" and turret_xml.tag != "turretDesign":
             raise ValueError("Invalid turret element.")
 
-        coaxial = turret_xml.get("coaxial") == "true"
-
-        muzzles = [np.array([m.get("x"), m.get("y"), m.get("z")], dtype=np.float64)
-                   for m in turret_xml.iterfind("muzzlePosition")]
-
         base_xml = turret_xml.find("base")
-        base_origin = np.array([base_xml.get("px"), base_xml.get("py"), base_xml.get("pz")],
-                                dtype=np.float64)
-        base = [Block.from_xml(b) for b in base_xml.iterfind("*/item")]
-
+        assert base_xml is not None
         body_xml = turret_xml.find("body")
-        body_origin = np.array([body_xml.get("px"), body_xml.get("py"), body_xml.get("pz")],
-                                dtype=np.float64)
-        body = [Block.from_xml(b) for b in body_xml.iterfind("*/item")]
-
+        assert body_xml is not None
         barrel_xml = turret_xml.find("barrel")
-        barrel_origin = np.array([barrel_xml.get("px"), barrel_xml.get("py"), barrel_xml.get("pz")],
-                                    dtype=np.float64)
-        barrel = [Block.from_xml(b) for b in barrel_xml.iterfind("*/item")]
+        assert barrel_xml is not None
 
-        return Turret(
-            size            = float(turret_xml.get("size")),
-            coaxial         = coaxial,
-            color           = int(turret_xml.get("shot_color")),
-            parent          = int(turret_xml.get("blockIndex", -1)),
-            muzzles         = muzzles,
-            base_origin     = base_origin,
-            base            = base,
-            body_origin     = body_origin,
-            body            = body,
-            barrel_origin   = barrel_origin,
-            barrel          = barrel)
+        return cls(
+            name=name,
+            size=float(turret_xml.get("size", "")),
+            coaxial=turret_xml.get("coaxial") == "true",
+            color=int(turret_xml.get("shot_color", "")),
+            parent=int(turret_xml.get("blockIndex", -1)),
+            muzzles=[
+                np.asarray([m.get("x"), m.get("y"), m.get("z")], dtype=np.float64)
+                for m in turret_xml.iterfind("muzzlePosition")
+            ],
+            base=TurretPart.from_xml(base_xml),
+            body=TurretPart.from_xml(body_xml),
+            barrel=TurretPart.from_xml(barrel_xml),
+        )
 
-    def get_part(self, part: str) -> tuple[list[Block], np.ndarray]:
-        if part.casefold() == "base":
-            return self.base, self.base_origin
-        elif part.casefold() == "body":
-            return self.body, self.body_origin
-        elif part.casefold() == "barrel":
-            return self.barrel, self.barrel_origin
-        else:
-            raise ValueError(f"Invalid input argument '{part}'.")
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Ship:
-    blocks:     list[Block] = field(default_factory=list, repr=False)
-    turrets:    list[Turret] = field(default_factory=list, repr=False)
+    name: str
+    blocks: Sequence[Block] = field(default_factory=list, repr=False)
+    turrets: Sequence[Turret] = field(default_factory=list, repr=False)
 
     @classmethod
-    def from_xml(cls, ship_xml: Element, name: str = "") -> Ship:
-        if ship_xml.tag != "ship_design" and ship_xml.tag != "plan":
-            raise ValueError("No <ship_design> or <plan> found.")
+    def from_xml(cls, ship_xml: Element, name: str = "") -> Self:
+        match ship_xml.tag:
+            case "ship_design":
+                tag = "plan/item"
+            case "plan":
+                tag = "item"
+            case _:
+                raise ValueError(f"Invalid XML tag: {ship_xml.tag}")
 
-        blocks = [Block.from_xml(item) for item in ship_xml.iterfind("plan/item" if ship_xml.tag != "plan" else "item")]
-        turrets = [Turret.from_xml(turret) for turret in ship_xml.iterfind("turretDesign")]
-
-        return Ship(blocks=blocks, turrets=turrets)
+        return cls(
+            name=name,
+            blocks=[Block.from_xml(item) for item in ship_xml.iterfind(tag)],
+            turrets=[Turret.from_xml(turret) for turret in ship_xml.iterfind("turretDesign")],
+        )
